@@ -25,21 +25,23 @@ import logging
 
 import numpy as np
 
-from satpy.readers.core.hdf5 import HDF5FileHandler
+from satpy.readers.core.netcdf import NetCDF4FileHandler
 from satpy.utils import get_legacy_chunk_size
 
 LOG = logging.getLogger(__name__)
 CHUNK_SIZE = get_legacy_chunk_size()
 
 
-class MSIECL1CFileHandler(HDF5FileHandler):
+class MSIECL1CFileHandler(NetCDF4FileHandler):
     """File handler for MSI L1c H5 files."""
 
     def __init__(self, filename, filename_info, filetype_info):
         """Init the file handler."""
         super(MSIECL1CFileHandler, self).__init__(filename,
                                                   filename_info,
-                                                  filetype_info)
+                                                  filetype_info,
+                                                  xarray_kwargs={"chunks": "auto"},
+                                                  )
 
     @property
     def end_time(self):
@@ -79,7 +81,8 @@ class MSIECL1CFileHandler(HDF5FileHandler):
         # Rename dimensions, as some have incorrect names (notably the pixel value data).
         if "dim_1" in data.dims:
             data = data.rename({"dim_1": "y", "dim_2": "x"})
-
+        if "along_track" in data.dims:
+            data = data.rename({"along_track": "y", "across_track": "x"})
         return data
 
     def _calibrate(self, chan_data, band_index, cal_type):
